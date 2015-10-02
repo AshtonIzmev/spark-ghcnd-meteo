@@ -6,8 +6,12 @@ import utils.MeteoUtils
 
 object SparkMeteo {
 
-  val stationsHeader: String = "id date type v"
-  val dataHeader: String = "id lat long"
+  val stationsHeader: String = "id lat long"
+  val dataHeader: String = "id date type v"
+
+  def trimHeaderRow(r:Row): Row = {
+    Row(r.getString(0).trim, r.getString(1).trim, r.getString(2).trim)
+  }
 
   def getClosestStations(nb:Int, lat:Double, long:Double, stations:DataFrame): Map[String, Double] = {
     stations

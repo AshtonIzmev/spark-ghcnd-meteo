@@ -1,6 +1,6 @@
 package test.scala.au.com.octo
 
-import au.com.octo.SparkMeteo
+import au.com.octo.{SparkGHCNDMeteo, SparkBOMMeteo, SparkMeteo}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.{SparkConf, SparkContext}
@@ -49,6 +49,41 @@ class SparkMeteoTest extends FlatSpec with Matchers {
     resul(0)._2 should equal (14.58 +- 0.01)
     resul(1)._1 should equal ("20140101")
     resul(1)._2 should equal (3.58 +- 0.01)
+  }
+
+  "GHCND header" should "be correctly parsed" in {
+    // given
+    val s = "UYM00086580 -34.8380  -56.0310   32.0    CARRASCO INTL                          86580\n"
+
+    // test
+    val header = SparkGHCNDMeteo.getHeaderRow(s)
+
+    // assert
+    header.get(0) should be ("UYM00086580")
+    header.get(1) should be (" -34.8380 ")
+    header.get(2) should be (" -56.0310 ")
+  }
+
+
+  "BOM header" should "be correctly parsed" in {
+    // given
+    val s = "   8184 AJANA 2                                  -28.0000  114.8000 May 1910 Mar 1919    8.0   99   N\n"
+
+    // test
+    val header = SparkBOMMeteo.getHeaderRow(s)
+
+    // assert
+    header.get(0) should be ("   8184 ")
+    header.get(1) should be (" -28.0000 ")
+    header.get(2) should be (" 114.8000 ")
+  }
+
+  "String split" should "WORK" in {
+    val s = "a,b,c,,,"
+
+    val spl = s.split(",", -1)
+
+    spl.length should be (6)
   }
 
 }

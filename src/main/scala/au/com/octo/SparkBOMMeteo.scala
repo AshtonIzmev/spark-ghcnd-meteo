@@ -27,8 +27,7 @@ object SparkBOMMeteo {
     val bomStationsDF: DataFrame = getStationDataframe(sqlContext, fileBom)
     val weatherData: DataFrame = getWeatherDataframe(sqlContext, fileData)
 
-
-    val closestStations = SparkMeteo.getClosestStations(5, -33.923221, 151.173230, bomStationsDF)
+    val closestStations = SparkMeteo.getClosestStations(5, -33.6468, 115.9153, bomStationsDF)
     //val result = getDataForStations("PRCP", "20140507", closestStations, weatherData)
     val result = SparkMeteo.getAllDaysDataForStations("PRCP", closestStations, weatherData)
     closestStations.foreach(println)
@@ -43,7 +42,7 @@ object SparkBOMMeteo {
 
     val schema = StructType(SparkMeteo.dataHeader.split(" ").map(fieldName => StructField(fieldName, StringType, true)))
     val weatherRaw = sqlContext.sparkContext.textFile(file)
-      .map(l => l.split(","))
+      .map(l => l.split(",", -1))
       .map(spl => Row(spl(1), spl(2)+spl(3)+spl(4), "PRCP", spl(5)))
     val df = sqlContext.createDataFrame(weatherRaw, schema)
     df.withColumn("v", MeteoUtils.toDouble(df("v")))
@@ -53,11 +52,16 @@ object SparkBOMMeteo {
 
     val schema = StructType(SparkMeteo.stationsHeader.split(" ").map(fieldName => StructField(fieldName, StringType, true)))
     val stationRaw = sqlContext.sparkContext.textFile(file)
-      .map(l => Row(l.substring(0,7), l.substring(50,59), l.substring(59,69)))
+      .map(l => SparkMeteo.trimHeaderRow(getHeaderRow(l)))
     val df = sqlContext.createDataFrame(stationRaw, schema)
     df.withColumn("lat", MeteoUtils.toDouble(df("lat")))
       .withColumn("long", MeteoUtils.toDouble(df("long")))
   }
+
+  def getHeaderRow(l: String): Row = {
+    Row(l.substring(0, 8), l.substring(48, 58), l.substring(58, 68))
+  }
+
 }
 
 

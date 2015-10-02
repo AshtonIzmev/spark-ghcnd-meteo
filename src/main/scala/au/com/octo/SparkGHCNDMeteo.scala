@@ -19,7 +19,7 @@ object SparkGHCNDMeteo {
   // the original file (found on the ftp)
   // need to be trimmed and a header has to be added
   // ids,lat,long
-  val fileGhcnd = "/home/issam/meteo/ghcnd_weather/ghcnd-stations.csv"
+  val fileGhcnd = "/home/issam/meteo/ghcnd_weather/ghcnd-stations.txt"
 
 	def main(args: Array[String]) {
     val conf = new SparkConf().setAppName("SparkMeteo").setMaster("local[*]")
@@ -45,8 +45,8 @@ object SparkGHCNDMeteo {
 
     val schema = StructType(SparkMeteo.dataHeader.split(" ").map(fieldName => StructField(fieldName, StringType, true)))
     val weatherRaw = sqlContext.sparkContext.textFile(file)
-      .map(l => l.split(","))
-      .map(spl => Row(spl(1), spl(2), spl(3), spl(4)))
+      .map(l => l.split(",", -1))
+      .map(spl => Row(spl(0), spl(1), spl(2), spl(3)))
     val df = sqlContext.createDataFrame(weatherRaw, schema)
     df.withColumn("v", MeteoUtils.toDouble(df("v")))
   }
@@ -55,12 +55,15 @@ object SparkGHCNDMeteo {
 
     val schema = StructType(SparkMeteo.stationsHeader.split(" ").map(fieldName => StructField(fieldName, StringType, true)))
     val stationRaw = sqlContext.sparkContext.textFile(file)
-      .map(l => Row(l.substring(0,13), l.substring(13,20), l.substring(20,28)))
+      .map(l => SparkMeteo.trimHeaderRow(getHeaderRow(l)))
     val df = sqlContext.createDataFrame(stationRaw, schema)
     df.withColumn("lat", MeteoUtils.toDouble(df("lat")))
       .withColumn("long", MeteoUtils.toDouble(df("long")))
   }
 
+  def getHeaderRow(l: String): Row = {
+    Row(l.substring(0, 11), l.substring(11, 21), l.substring(21, 31))
+  }
 }
 
 
