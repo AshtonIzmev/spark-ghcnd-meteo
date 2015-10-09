@@ -1,5 +1,6 @@
 package au.com.octo
 
+import com.typesafe.config.ConfigFactory
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
@@ -8,23 +9,19 @@ import utils.MeteoUtils
 
 object SparkGHCNDMeteo {
 
-  // a header has to be added to the files
-  // id,date,type,v1,v2,v3,v4,v5
-  // the files are on ftp://ftp.ncdc.noaa.gov/pub/data/ghcn/daily/by_year/
-  val file2012 = "/home/issam/meteo/ghcnd_weather/2012.csv"
-  val file2013 = "/home/issam/meteo/ghcnd_weather/2013.csv"
-  val file2014 = "/home/issam/meteo/ghcnd_weather/2014.csv"
-  val file2015 = "/home/issam/meteo/ghcnd_weather/2015.csv"
-
-  // the original file (found on the ftp)
-  // need to be trimmed and a header has to be added
-  // ids,lat,long
-  val fileGhcnd = "/home/issam/meteo/ghcnd_weather/ghcnd-stations.txt"
+  private val config =  ConfigFactory.load()
 
 	def main(args: Array[String]) {
     val conf = new SparkConf().setAppName("SparkMeteo").setMaster("local[*]")
 		val sc = new SparkContext(conf)
     val sqlContext = new SQLContext(sc)
+
+    val confFiles = config.getConfig("files")
+    val confGhcnd = confFiles.getConfig("ghcnd")
+
+    val fileGhcnd = confGhcnd.getString("fileStations")
+    val file2013 = confGhcnd.getString("file2013")
+    val file2014 = confGhcnd.getString("file2014")
 
     val ghcndDF: DataFrame = getStationDataframe(sqlContext, fileGhcnd)
     val weatherData: DataFrame = getWeatherDataframe(sqlContext, file2013)

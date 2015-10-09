@@ -1,5 +1,6 @@
 package au.com.octo
 
+import com.typesafe.config.ConfigFactory
 import org.apache.spark.{SparkContext, SparkConf}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
@@ -8,21 +9,19 @@ import utils.MeteoUtils
 
 object SparkBOMMeteo {
 
-  // a header has to be added to the files
-  // id,date,type,v1,v2,v3,v4,v5
-  // the files are on ftp://ftp.ncdc.noaa.gov/pub/data/ghcn/daily/by_year/
-  val fileData = "/home/issam/meteo/bom_weather/IDCJAC0009_9989_1800_Data.csv"
-  val file2013 = "/home/issam/meteo/bom_weather/*.csv"
-
-  // the original file (found on the ftp)
-  // need to be trimmed and a header has to be added
-  // ids,lat,long
-  val fileBom = "/home/issam/meteo/bom_weather/alphaAUS_139.txt"
+  private val config =  ConfigFactory.load()
 
   def main(args: Array[String]) {
     val conf = new SparkConf().setAppName("SparkMeteo").setMaster("local[*]")
     val sc = new SparkContext(conf)
     val sqlContext = new SQLContext(sc)
+
+    val confFiles = config.getConfig("files")
+    val confBom = confFiles.getConfig("bom")
+
+    val fileBom = confBom.getString("fileStations")
+    val fileData = confBom.getString("fileData")
+
 
     val bomStationsDF: DataFrame = getStationDataframe(sqlContext, fileBom)
     val weatherData: DataFrame = getWeatherDataframe(sqlContext, fileData)
